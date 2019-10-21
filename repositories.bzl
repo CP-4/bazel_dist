@@ -1,4 +1,4 @@
-# Copyright 2016 The Bazel Authors. All rights reserved.
+# Copyright 2017 The Bazel Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Once recursive workspace is implemented in Bazel, this file should cease
-# to exist.
+"""Rules for load all dependencies of rules_docker."""
 
 load(
     "@bazel_tools//tools/build_defs/repo:http.bzl",
@@ -21,72 +19,178 @@ load(
     "http_file",
 )
 load(
-    "//third_party/golang:revision.bzl",
-    "GOLANG_REVISION",
-    "GOLANG_SHA256",
+    "@io_bazel_rules_docker//toolchains/docker:toolchain.bzl",
+    _docker_toolchain_configure = "toolchain_configure",
 )
-load(
-    "//third_party/clang:revision.bzl",
-    "CLANG_REVISION",
-    "DEBIAN8_CLANG_SHA256",
-    "UBUNTU16_04_CLANG_SHA256",
+
+# The release of the github.com/google/containerregistry to consume.
+CONTAINERREGISTRY_RELEASE = "v0.0.34"
+
+_local_tool_build_template = """
+sh_binary(
+    name = "{name}",
+    srcs = ["bin/{name}"],
+    visibility = ["//visibility:public"],
 )
-load(
-    "//third_party/libcxx:revision.bzl",
-    "DEBIAN8_LIBCXX_SHA256",
-    "LIBCXX_REVISION",
-    "UBUNTU16_04_LIBCXX_SHA256",
-)
-load(
-    "//third_party/openjdk:revision.bzl",
-    "JDK_VERSION",
-    "OPENJDK_SHA256",
-    "OPENJDK_SRC_SHA256",
-)
-load(
-    "//container/common/bazel:version.bzl",
-    "BAZEL_VERSION_SHA256S",
+"""
+
+def _local_tool(repository_ctx):
+    rctx = repository_ctx
+    realpath = rctx.which(rctx.name)
+    rctx.symlink(realpath, "bin/%s" % rctx.name)
+    rctx.file(
+        "WORKSPACE",
+        'workspace(name = "{}")\n'.format(rctx.name),
+    )
+    rctx.file(
+        "BUILD",
+        _local_tool_build_template.format(name = rctx.name),
+    )
+
+local_tool = repository_rule(
+    local = True,
+    implementation = _local_tool,
 )
 
 def repositories():
-    """Download dependencies of bazel-toolchains."""
+    """Download dependencies of container rules."""
     excludes = native.existing_rules().keys()
 
-    # ============================== Repositories ==============================
-    if "io_bazel_rules_docker" not in excludes:
+    if "puller" not in excludes:
+        http_file(
+            name = "puller",
+            executable = True,
+            sha256 = "2a3ccb6ef8f99ec0053b56380824a7c100ba00eb0e147d1bda748884113542f1",
+            urls = [("https://storage.googleapis.com/containerregistry-releases/" +
+                     CONTAINERREGISTRY_RELEASE + "/puller.par")],
+        )
+
+    if "importer" not in excludes:
+        http_file(
+            name = "importer",
+            executable = True,
+            sha256 = "0eec1a4ffb26623dbb4075e5459fa0ede36548edf872d2691ebbcb3c4ccb8cf3",
+            urls = [("https://storage.googleapis.com/containerregistry-releases/" +
+                     CONTAINERREGISTRY_RELEASE + "/importer.par")],
+        )
+
+    if "containerregistry" not in excludes:
         http_archive(
-            name = "io_bazel_rules_docker",
-            sha256 = "4abb48f56b838957c9c72ac511b44f79612fcf39d08338fad14a8e3f6b0572ea",
-            strip_prefix = "rules_docker-b8ff6a85ec359db3fd5657accd3e524daf12016d",
-            urls = ["https://github.com/bazelbuild/rules_docker/archive/b8ff6a85ec359db3fd5657accd3e524daf12016d.tar.gz"],
+            name = "containerregistry",
+            sha256 = "8182728578f7d7178e7efcef8ce9074988a1a2667f20ecff5cf6234fba284dd3",
+            strip_prefix = "containerregistry-" + CONTAINERREGISTRY_RELEASE[1:],
+            urls = [("https://github.com/google/containerregistry/archive/" +
+                     CONTAINERREGISTRY_RELEASE + ".tar.gz")],
         )
 
-        # Register the docker toolchain type
-        native.register_toolchains(
-            # Register the default docker toolchain that expects the 'docker'
-            # executable to be in the PATH
-            "@io_bazel_rules_docker//toolchains/docker:default_linux_toolchain",
-            "@io_bazel_rules_docker//toolchains/docker:default_windows_toolchain",
-            "@io_bazel_rules_docker//toolchains/docker:default_osx_toolchain",
-        )
+    # TODO(mattmoor): Remove all of this (copied from google/containerregistry)
+    # once transitive workspace instantiation lands.
 
-    # io_bazel_rules_go is the dependency of container_test rules.
-    if "io_bazel_rules_go" not in excludes:
+    if "httplib2" not in excludes:
+        # TODO(mattmoor): Is there a clean way to override?
         http_archive(
-            name = "io_bazel_rules_go",
-            urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.16.5/rules_go-0.16.5.tar.gz"],
-            sha256 = "7be7dc01f1e0afdba6c8eb2b43d2fa01c743be1b9273ab1eaf6c233df078d705",
+            name = "httplib2",
+            build_file_content = """
+py_library(
+   name = "httplib2",
+   srcs = glob(["**/*.py"]),
+   data = ["cacerts.txt"],
+   visibility = ["//visibility:public"]
+)""",
+            sha256 = "d9f568c183d1230f271e9c60bd99f3f2b67637c3478c9068fea29f7cca3d911f",
+            strip_prefix = "httplib2-0.11.3/python2/httplib2/",
+            type = "tar.gz",
+            urls = ["https://codeload.github.com/httplib2/httplib2/tar.gz/v0.11.3"],
         )
 
-    if "base_images_docker" not in excludes:
+    # Used by oauth2client
+    if "six" not in excludes:
+        # TODO(mattmoor): Is there a clean way to override?
         http_archive(
-            name = "base_images_docker",
-            sha256 = "ce6043d38aa7fad421910311aecec865beb060eb56d8c3eb5af62b2805e9379c",
-            strip_prefix = "base-images-docker-7657d04ad9e30b9b8d981b96ae57634cd45ba18a",
-            urls = ["https://github.com/GoogleContainerTools/base-images-docker/archive/7657d04ad9e30b9b8d981b96ae57634cd45ba18a.tar.gz"],
+            name = "six",
+            build_file_content = """
+# Rename six.py to __init__.py
+genrule(
+    name = "rename",
+    srcs = ["six.py"],
+    outs = ["__init__.py"],
+    cmd = "cat $< >$@",
+)
+py_library(
+   name = "six",
+   srcs = [":__init__.py"],
+   visibility = ["//visibility:public"],
+)""",
+            sha256 = "e24052411fc4fbd1f672635537c3fc2330d9481b18c0317695b46259512c91d5",
+            strip_prefix = "six-1.9.0/",
+            type = "tar.gz",
+            urls = ["https://pypi.python.org/packages/source/s/six/six-1.9.0.tar.gz"],
         )
 
-    # =============================== Repo rule deps ==========================
+    # Used for authentication in containerregistry
+    if "oauth2client" not in excludes:
+        # TODO(mattmoor): Is there a clean way to override?
+        http_archive(
+            name = "oauth2client",
+            build_file_content = """
+py_library(
+   name = "oauth2client",
+   srcs = glob(["**/*.py"]),
+   visibility = ["//visibility:public"],
+   deps = [
+     "@httplib2//:httplib2",
+     "@six//:six",
+   ]
+)""",
+            sha256 = "7230f52f7f1d4566a3f9c3aeb5ffe2ed80302843ce5605853bee1f08098ede46",
+            strip_prefix = "oauth2client-4.0.0/oauth2client/",
+            type = "tar.gz",
+            urls = ["https://codeload.github.com/google/oauth2client/tar.gz/v4.0.0"],
+        )
+
+    # Used for parallel execution in containerregistry
+    if "concurrent" not in excludes:
+        # TODO(mattmoor): Is there a clean way to override?
+        http_archive(
+            name = "concurrent",
+            build_file_content = """
+py_library(
+   name = "concurrent",
+   srcs = glob(["**/*.py"]),
+   visibility = ["//visibility:public"]
+)""",
+            sha256 = "a7086ddf3c36203da7816f7e903ce43d042831f41a9705bc6b4206c574fcb765",
+            strip_prefix = "pythonfutures-3.0.5/concurrent/",
+            type = "tar.gz",
+            urls = ["https://codeload.github.com/agronholm/pythonfutures/tar.gz/3.0.5"],
+        )
+
+    # For packaging python tools.
+    if "subpar" not in excludes:
+        http_archive(
+            name = "subpar",
+            sha256 = "cf3762b10426a1887d37f127b4c1390785ecb969254096eb714cc1db371f78d6",
+            strip_prefix = "subpar-a4f9b23bf01bcc7a52d458910af65a90ee991aff",
+            urls = ["https://github.com/google/subpar/archive/a4f9b23bf01bcc7a52d458910af65a90ee991aff.tar.gz"],
+        )
+
+    if "structure_test_linux" not in excludes:
+        http_file(
+            name = "structure_test_linux",
+            executable = True,
+            sha256 = "543577685b33f0483bd4df72534ac9f84c17c9315d8afdcc536cce3591bb8f7c",
+            urls = ["https://storage.googleapis.com/container-structure-test/v1.4.0/container-structure-test-linux-amd64"],
+        )
+
+    if "structure_test_darwin" not in excludes:
+        http_file(
+            name = "structure_test_darwin",
+            executable = True,
+            sha256 = "c1bc8664d411c6df23c002b41ab1b9a3d72ae930f194a997468bfae2f54ca751",
+            urls = ["https://storage.googleapis.com/container-structure-test/v1.4.0/container-structure-test-darwin-amd64"],
+        )
+
+    # For bzl_library.
     if "bazel_skylib" not in excludes:
         http_archive(
             name = "bazel_skylib",
@@ -95,115 +199,20 @@ def repositories():
             urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.6.0.tar.gz"],
         )
 
-    # ================================ GPG Keys ================================
-    # Bazel gpg key necessary to install Bazel in the containers.
-    if "bazel_gpg" not in excludes:
-        http_file(
-            name = "bazel_gpg",
-            downloaded_file_path = "bazel_gpg",
-            sha256 = "30af2ca7abfb65987cd61802ca6e352aadc6129dfb5bfc9c81f16617bc3a4416",
-            urls = ["https://bazel.build/bazel-release.pub.gpg"],
+    if "gzip" not in excludes:
+        local_tool(
+            name = "gzip",
         )
 
-    # Docker gpg key necessary to install Docker in the containers.
-    if "docker_gpg" not in excludes:
-        http_file(
-            name = "docker_gpg",
-            downloaded_file_path = "docker_gpg",
-            sha256 = "1500c1f56fa9e26b9b8f42452a553675796ade0807cdce11975eb98170b3a570",
-            urls = ["https://download.docker.com/linux/ubuntu/gpg"],
-        )
+    native.register_toolchains(
+        # Register the default docker toolchain that expects the 'docker'
+        # executable to be in the PATH
+        "@io_bazel_rules_docker//toolchains/docker:default_linux_toolchain",
+        "@io_bazel_rules_docker//toolchains/docker:default_windows_toolchain",
+        "@io_bazel_rules_docker//toolchains/docker:default_osx_toolchain",
+    )
 
-    # GCloud gpg key necessary to install GCloud in the containers.
-    if "gcloud_gpg" not in excludes:
-        http_file(
-            name = "gcloud_gpg",
-            downloaded_file_path = "gcloud_gpg",
-            sha256 = "226ba1072f20e4ff97ee4f94e87bf45538a900a6d9b25399a7ac3dc5a2f3af87",
-            urls = ["https://packages.cloud.google.com/apt/doc/apt-key.gpg"],
-        )
-
-    # Launchpad OpenJDK key used when install java in trusty.
-    if "launchpad_openjdk_gpg" not in excludes:
-        http_file(
-            name = "launchpad_openjdk_gpg",
-            downloaded_file_path = "launchpad_openjdk_gpg",
-            sha256 = "54b6274820df34a936ccc6f5cb725a9b7bb46075db7faf0ef7e2d86452fa09fd",
-            urls = ["http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0xEB9B1D8886F44E2A"],
-        )
-
-    # =============================== Toolchains ===============================
-    # Golang
-    if "golang_release" not in excludes:
-        http_file(
-            name = "golang_release",
-            downloaded_file_path = "go" + GOLANG_REVISION + ".linux-amd64.tar.gz",
-            sha256 = GOLANG_SHA256,
-            urls = ["https://storage.googleapis.com/golang/go" + GOLANG_REVISION + ".linux-amd64.tar.gz"],
-        )
-
-    # Clang
-    if "debian8_clang_release" not in excludes:
-        http_file(
-            name = "debian8_clang_release",
-            downloaded_file_path = "clang_" + CLANG_REVISION + ".tar.gz",
-            sha256 = DEBIAN8_CLANG_SHA256,
-            urls = ["https://storage.googleapis.com/clang-builds-stable/clang-debian8/clang_" + CLANG_REVISION + ".tar.gz"],
-        )
-
-    if "ubuntu16_04_clang_release" not in excludes:
-        http_file(
-            name = "ubuntu16_04_clang_release",
-            downloaded_file_path = "clang_" + CLANG_REVISION + ".tar.gz",
-            sha256 = UBUNTU16_04_CLANG_SHA256,
-            urls = ["https://storage.googleapis.com/clang-builds-stable/clang-ubuntu16_04/clang_" + CLANG_REVISION + ".tar.gz"],
-        )
-
-    # libcxx
-    if "debian8_libcxx_release" not in excludes:
-        http_file(
-            name = "debian8_libcxx_release",
-            downloaded_file_path = "libcxx-msan_" + LIBCXX_REVISION + ".tar.gz",
-            sha256 = DEBIAN8_LIBCXX_SHA256,
-            urls = ["https://storage.googleapis.com/clang-builds-stable/clang-debian8/libcxx-msan_" + LIBCXX_REVISION + ".tar.gz"],
-        )
-
-    if "ubuntu16_04_libcxx_release" not in excludes:
-        http_file(
-            name = "ubuntu16_04_libcxx_release",
-            downloaded_file_path = "libcxx-msan_" + LIBCXX_REVISION + ".tar.gz",
-            sha256 = UBUNTU16_04_LIBCXX_SHA256,
-            urls = ["https://storage.googleapis.com/clang-builds-stable/clang-ubuntu16_04/libcxx-msan_" + LIBCXX_REVISION + ".tar.gz"],
-        )
-
-    # ============================ Bazel installers ============================
-    # Official Bazel installer.sh for all supported versions.
-    for bazel_version, bazel_sha256 in BAZEL_VERSION_SHA256S.items():
-        name = "bazel_%s_installer" % (bazel_version.replace(".", ""))
-        if name not in excludes:
-            http_file(
-                name = name,
-                downloaded_file_path = "bazel-" + bazel_version + "-installer-linux-x86_64.sh",
-                sha256 = bazel_sha256,
-                urls = [
-                    "https://releases.bazel.build/" + bazel_version + "/release/bazel-" + bazel_version + "-installer-linux-x86_64.sh",
-                    "https://github.com/bazelbuild/bazel/releases/download/" + bazel_version + "/bazel-" + bazel_version + "-installer-linux-x86_64.sh",
-                ],
-            )
-
-    # ============================ Azul OpenJDK packages ============================
-    if "azul_open_jdk" not in excludes:
-        http_file(
-            name = "azul_open_jdk",
-            downloaded_file_path = "zulu" + JDK_VERSION + "-linux_x64-allmodules.tar.gz",
-            sha256 = OPENJDK_SHA256,
-            urls = ["https://mirror.bazel.build/openjdk/azul-zulu" + JDK_VERSION + "/zulu" + JDK_VERSION + "-linux_x64-allmodules.tar.gz"],
-        )
-
-    if "azul_open_jdk_src" not in excludes:
-        http_file(
-            name = "azul_open_jdk_src",
-            downloaded_file_path = "zsrc" + JDK_VERSION + ".zip",
-            sha256 = OPENJDK_SRC_SHA256,
-            urls = ["https://mirror.bazel.build/openjdk/azul-zulu" + JDK_VERSION + "/zsrc" + JDK_VERSION + ".zip"],
-        )
+    if "docker_config" not in excludes:
+        # Automatically configure the docker toolchain rule to use the default
+        # docker binary from the system path
+        _docker_toolchain_configure(name = "docker_config")
