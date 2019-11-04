@@ -10,6 +10,7 @@ import numpy as np
 from timeit import default_timer as timer
 from datetime import datetime
 from pytz import timezone
+import multiprocessing
 
 audio_queue = queue.Queue()
 audio_length_queue = queue.Queue()
@@ -98,7 +99,7 @@ def check_i_audio():
 
 def fetch_audio():
 
-    threadName = threading.currentThread().name
+    # threadName = threading.currentThread().name
 
     while True:
         if not audio_queue.empty():
@@ -110,7 +111,8 @@ def fetch_audio():
 
 def test_ds_inst(model_path):
 
-    threadName = threading.currentThread().name
+    # threadName = threading.currentThread().name
+    processName = multiprocessing.current_process().name
     sample_rate = 16000
     # Point to a path containing the pre-trained models & resolve ~ if used
     dirName = os.path.expanduser(args.model)
@@ -122,9 +124,9 @@ def test_ds_inst(model_path):
 
     # Load output_graph, alpahbet, lm and trie
     model_retval = wavTranscriber.load_model(output_graph, alphabet, lm, trie)
-    print(threadName + ': Model loded . . . ')
+    # print(threadName + ': Model loded . . . ')
 
-    _model_loded.put(threadName)
+    _model_loded.put(processName)
 
     run_ds = False
     with _read_write_i_audio_sema:
@@ -152,7 +154,7 @@ def test_ds_inst(model_path):
         with _read_write_i_audio_sema:
             run_ds = check_i_audio()
 
-    print(threadName + ' end')
+    print(processName + ' end')
 
 if __name__ == '__main__':
 
@@ -200,7 +202,8 @@ if __name__ == '__main__':
             inference_start = timer()
 
             for i in range(n_thread):
-                ds_thread[i] = threading.Thread(target=test_ds_inst, args=(args.model, ), name='test_DS' + str(i))
+                # ds_thread[i] = threading.Thread(target=test_ds_inst, args=(args.model, ), name='test_DS' + str(i))
+                ds_thread[i] = multiprocessing.Process(target=test_ds_inst, args=(args.model, ), name='test_DS' + str(i))
                 ds_thread[i].start()
 
             # while _model_loded.qsize() != n_thread:
