@@ -1,0 +1,313 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+
+
+
+
+
+
+
+
+
+<head>
+	<title>Ultimatix - Digitally Connected!</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<meta http-equiv="X-UA-Compatible" content="IE=edge;" />
+	<meta http-equiv="X-UA-Compatible" content="IE=11;" />
+	<!--===============================================================================================-->
+	<link rel="icon" type="image/png" href="/login/img/Modified/favicon.ico" />
+	<link rel="stylesheet" href="/login/css/Modified/bootstrap.css">
+	<link rel="stylesheet" href="/login/css/Modified/mdb.min.css">
+	<link rel="stylesheet" type="text/css" href="/login/css/Modified/style1.css">
+	<script type="text/javascript" src="/login/js/Modified/popper.js"></script>
+	<script type="text/javascript" src="/login/js/Modified/jquery.js"></script>
+	<script type="text/javascript" src="/login/js/Modified/bootstrap.js"></script>
+
+<script type="text/javascript">
+var loginErrorMessage='';
+var user='';
+var downtimeMessage = 'This feature is currently unavailable.';
+var sendNotificationUrl = 'https://login.ultimatix.net/utxAuthService/easyauth/rest/sendNofication';
+</script>
+
+</head>
+<noscript>
+    <div id="noscript" style="position: absolute; top: 0; left: 0; background-color: #FFF; z-index: 999; height: 100%; width: 100%; text-align: center; padding-top: 50px;">
+    You must <b>enable Javascript</b> in order to use this site.
+    </div>
+</noscript>
+<body onload="getLastLoginDetails()" >
+
+	<div class="main">
+		<div class="column" id="img-Container">
+			<div id="logo-container">
+				<img src="/login/img/Modified/logo.svg" id="logo">
+			</div>
+			<img src="/login/img/Modified/web_illustration.png" class="responsive">
+
+			<div id="copyright-container">
+				<div id="termsOfUse">
+					<a data-toggle='modal' data-target="#termsofUseModal" tabindex="-1">Terms of Use |</a>
+					<a data-toggle='modal' data-target="#browCompatibility" tabindex="-1">Browser and Display Compatibility</a>
+				</div>
+
+				<div id="copyrightMsg">Copyright &copy; 2019 Tata Consultancy Services <br>
+					Entry to this site is restricted to employees and affiliates.
+				</div>
+			</div>
+
+							<!-- Modal -->
+							<div class="modal fade" id="termsofUseModal" tabindex="-1" role="dialog" aria-labelledby="termsofUseModalTitle" aria-describedby="termsModal" aria-modal="true">
+								<div class="modal-dialog modal-dialog-centered" role="document">
+								  <div class="modal-content" id="terms-content">
+									<div class="modal-header">
+									  <h5 class="modal-title" id="termsofUseModalLongTitle">
+										</h5>
+			
+									</div>
+									<div class="modal-body" id="termsModal">
+											
+									</div>
+									<div class="modal-ok-btn-container"><button type="button" class="btn btn-primary" data-dismiss="modal" id="modal-ok-btn">OK</button></div>
+								  </div>
+								</div>
+								</div>
+								
+
+															<!-- Modal -->
+							<div class="modal fade" id="browCompatibility" tabindex="-1" role="dialog" aria-labelledby="browserCompatibilityTitle" aria-describedby="browserCompatibilityTitleBody" aria-modal="true">
+								<div class="modal-dialog modal-dialog-centered" role="document">
+								  <div class="modal-content" id="browComp-content">
+									<div class="modal-header">
+									  <h5 class="modal-title" id="browserCompatibilityTitle">
+										</h5>
+			
+									</div>
+									<div class="modal-body" id="browserCompatibilityTitleBody">
+											
+									</div>
+									<div class="modal-ok-btn-container"><button type="button" class="btn btn-primary" data-dismiss="modal" id="modal-ok-btn">OK</button></div>
+								  </div>
+								</div>
+							  </div>
+		</div>
+		<div class="column" id="login-Container">
+			<div id="inside-log-con">
+				<div id="ultimatix-logo">
+					<a href=https://www.ultimatix.net/  tabindex="-1" ><img id="ultimatix-image" src="img/Modified/logo_ultimatix.svg"></a>
+				</div>
+				<!-- Second Page Static username -->
+				<div id="username-static">
+					<div id="username-text-second">
+						Username
+					</div>
+					<div id="static-input-container">
+						<input type="text" id="staticInput" name="staticInput" tabindex="0" title="Press Enter to edit username" onclick="editusernameOnOtherScreens()" readonly onkeyup="enterKey(event)">
+						<!-- <img class="edit-button" id="hide_username_second" src="/login/img/Modified/hide_username.svg"
+							onclick="if (staticInput.type == 'text') staticInput.type = 'password'; else staticInput.type = 'text';" title="Hide username">
+						<img class="ok-button" id="hide_username_second" src="/login/img/Modified/show_username.svg"
+							onclick="if (staticInput.type == 'text') staticInput.type = 'password'; else staticInput.type = 'text';" title="Show username"> -->
+						
+							<div class="edit-button" tabindex="0" id="edit-button"> <img id="hide_username_first"
+								src="/login/img/Modified/hide_username.svg" onclick="hideShowFirst()" title="Hide username" >
+						</div>
+						<div class="ok-button" tabindex="0" id="ok-button"><img id="hide_username_first"
+								src="/login/img/Modified/show_username.svg" onclick="hideShowSecond()" title="Show username" >
+						</div>
+					</div>
+				</div> <!-- Username Input -->
+				<div id="username-input-outer">
+					<div id="login-buttton-container-inner">
+						<div class="md-form" id="username-input" onclick="changeColor()" onfocusout="defaultColor()">
+							<input type="text" id="form1" class="form-control" name="form1"
+								onkeyup="capLock(event)" onclick="hideErroMsg()" tabindex="0" aria-label="Enter username and, on Tab plus Enter, you can hide username">
+							<label for="form1" id="input-label">Username</label>
+						</div>
+						<div style="display: flex;flex-direction: row;">
+						<div id="img1">
+								<div class="edit-button" id="edit-button2" tabindex="0"> <img id="hide_username_first2" src="/login/img/Modified/hide_username.svg"
+
+									title="Hide username" onclick="hideShowFirst()"> </div>
+
+							<div class="ok-button" id="ok-button2" tabindex="0"> <img id="hide_username_first2" src="/login/img/Modified/show_username.svg"
+								title="Show username"	onclick="hideShowSecond()"> </div>
+						</div> 
+						<div id="img2"><img id="personalized_username"
+								class="more_info" src="/login/img/Modified/personalized_username.svg"
+								title="You can now log on using Ultimatix Personalised username"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div id="field_blank"></div>
+			<!-- Second page div -->
+			<div id="second-page-div">
+				<div id="select-login-method">
+					Select Login Method
+				</div>
+				<div id="authentication-button">
+					<div id="authentication-button-inner">
+						<button type="button" class="btn auth-btns" id="auth-code-btn" value="1" tabindex="0"
+							onclick="authCode()" tabindex="0" aria-label="Select one from two available login methods. AuthCode is autoselected, press tab to select password.">AuthCode</button>
+					</div>
+							<div>
+						<button type="button" class="btn auth-btns" id="password-btn" value="0" tabindex="0"
+							onclick="passwordValue()">Password</button>
+					</div>
+				</div>
+				<div id="auth-error2">Use AuthCode generated using Ultimatix <a data-toggle='modal' data-target='#exampleModalCenter2' style='font-size:13px; text-decoration:none;' tabindex='-1'>Authenticator app</a></div>
+				<!--AuthCode Modal -->
+				<div class="modal fade" id="exampleModalCenter2" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle2" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="document">
+					  <div class="modal-content">
+						<div class="modal-header">
+						  <h5 class="modal-title" id="exampleModalLongTitle">Ultimatix Authenticator</h5>
+
+						</div>
+						<div class="modal-body" id="authCodeModal">
+								<p>An AuthCode can be generated using Ultimatix Authenticator app.</p>
+								<p>Download the Ultimatix Authenticator app from <a href='https://uxapps.ultimatix.net/'>UxApps</a></p>		
+								<p id="helpdesk">For any help please contact Ultimatix.helpdesk@tcs.com</p>																																				 
+							  <div class="modal-ok-btn-container"><button type="button" class="btn btn-primary" data-dismiss="modal" id="modal-ok-btn">OK</button></div>
+						</div>
+
+					  </div>
+					</div>
+				  </div>
+				
+				
+				<div id="disabled-button"><button disabled class="btn btn-primary"
+						id="auth-btns-disabled">Login</button>
+						
+					<div class="forget-link">
+						<a href=https://auth.ultimatix.net/utxLogin/pages/ForgetSelectionInt.jsp tabindex="0" >Forgot Username/Password?</a>
+					</div>
+					
+				</div>
+			</div>
+			<!-- Auth Code -->
+			<form id="auth-code-outer" method="post" action=/ultimatixLogin/login_pwdless.fcc  onsubmit = "return authValidation()" autocomplete="off">
+				<div id="auth-code-inner1">
+					<div id="auth-code-inner">
+						<div style="font-size:13px" id="enter-auth">Enter <strong>AuthCode</strong></div>
+						<div>
+							<div id="complete_authcode">
+								<input id="authcode1" class="auth-code-class" tabindex="1" type="number" min="0" max="9" onkeyup="onKeyUpEvent(1, event)"  onfocus="onFocusEvent(1)" onfocusout="onFocusOutEvent(1)" oninput="maxLengthCheck(this)" onkeydown="onKeyDownEvent(event)" maxlength = "1" aria-label="Enter 6 digit authcode. Press tab to select other login method."/>
+								<input id="authcode2" class="auth-code-class" type="number" min="0" max="9" onkeyup="onKeyUpEvent(2, event)"  onfocus="onFocusEvent(2)" onfocusout="onFocusOutEvent(2)" oninput="maxLengthCheck(this)" onkeydown="onKeyDownEvent(event)" maxlength = "1"/>
+								<input id="authcode3" class="auth-code-class" type="number" min="0" max="9" onkeyup="onKeyUpEvent(3, event)"  onfocus="onFocusEvent(3)" onfocusout="onFocusOutEvent(3)" oninput="maxLengthCheck(this)" onkeydown="onKeyDownEvent(event)" maxlength = "1"/>
+								<input id="authcode4" class="auth-code-class" type="number" min="0" max="9" onkeyup="onKeyUpEvent(4, event)"  onfocus="onFocusEvent(4)" onfocusout="onFocusOutEvent(4)" oninput="maxLengthCheck(this)" onkeydown="onKeyDownEvent(event)" maxlength = "1"/>							
+								<input id="authcode5" class="auth-code-class" type="number" min="0" max="9" onkeyup="onKeyUpEvent(5, event)"  onfocus="onFocusEvent(5)" onfocusout="onFocusOutEvent(5)" oninput="maxLengthCheck(this)" onkeydown="onKeyDownEvent(event)" maxlength = "1"/>
+								<input id="authcode6" class="auth-code-class" type="number" min="0" max="9" onkeyup="onKeyUpEvent(6, event)"  onfocus="onFocusEvent(6)" onfocusout="onFocusOutEvent(6)" oninput="maxLengthCheck(this)" onkeydown="onKeyDownEvent(event)" maxlength = "1"/>
+								<input type="text" id="partitioned"  maxlength="6"	name="Password" autocomplete="off" hidden/>								
+								</div>
+						</div>
+						<div id="auth-error"> </div>
+							<!--AuthCode Modal -->
+						<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="document">
+					  <div class="modal-content">
+						<div class="modal-header">
+						  <h5 class="modal-title" id="exampleModalLongTitle">Ultimatix Authenticator</h5>
+
+						</div>
+						<div class="modal-body" id="authCodeModal">
+								<p>An AuthCode can be generated using Ultimatix Authenticator app.</p>
+								<p>Download the Ultimatix Authenticator app from <a href='https://uxapps.ultimatix.net/'>UxApps</a></p>		
+								<p id="helpdesk">For any help please contact Ultimatix.helpdesk@tcs.com</p>																																				 
+							  <div class="modal-ok-btn-container"><button type="button" class="btn btn-primary" data-dismiss="modal" id="modal-ok-btn">OK</button></div>
+						</div>
+
+					  </div>
+					</div>
+				  </div>
+						
+						<div id="other-login-methods-auth" tabindex="-1"><a onclick="otherLoginMethods()" id="otherloginoption" tabindex="0" onkeyup="enterOtherLogin(event)" style="text-align:center;">Other Login Methods</a></div>
+						<p id="otp-caution"></p>
+						<INPUT TYPE=HIDDEN NAME="SMENC" VALUE="UTF-8" />
+						<INPUT type=HIDDEN name="SMLOCALE" value="US-EN" />
+						<INPUT type=hidden name="target" value=-SM-https%3A%2F%2Fknowmax3.ultimatix.net%2Fsites%2Fmyhr1--cop%2FIndia%2FIndia--Locals%2FCountryDLBothSeparation%2FTCS%20India%20Policy%20--%20Separation.pdf />
+						
+						<input type=HIDDEN id="username" name="USER" maxlength="256" tabindex="1" />
+						<input type="text" name="AuthType" value="1" hidden id="AuthType">
+					</div>
+				</div>
+				<div id="password-outer">
+					<div id="password-inner" class="md-form">
+						<div style="font-size:13px" id="enter-password">Enter <b>Password</b></div>
+						<div id="password-page-input">
+							<div id="password-input-div"><input type="password" id="password-login" aria-label="Enter Password or, press tab to select other login methods" onkeyup="enabledPassBtn()" class="form-control" name="Password" autocomplete="off" disabled onclick="passwordColor()" onkeypress="capLockPass(event)" onfocusout="passwordFocusOut()"/>
+							</div>							
+						</div>
+						<div id="pass-error"></div>
+						<div id="other-login-methods-pass"><a onclick="otherLoginMethods()" style="text-align:center;" tabindex="0" onkeyup="enterOtherLogin(event)">Other Login Methods</a></div>
+					</div>
+				</div>
+				<div id="submit-button">
+					<button type="submit" value="Submit" class="btn btn-primary" id="form-submit">Login</button>
+					
+						<div class="forget-link">
+							<a href=https://auth.ultimatix.net/utxLogin/pages/ForgetSelectionInt.jsp tabindex="0">Forgot Username/Password?</a>
+						</div>
+						
+				</div>
+			</form>
+			<!-- Proceed button -->
+			<div id="static-button-container">
+				<div id="button-container">
+					<button type="button" class="btn btn-primary" id="proceed-button"
+						onclick="staticUsername()" tabindex="0" aria-label="Press enter key to Proceed or press tab if forgot username or password">Proceed</button>
+				</div>
+
+				
+					<div class="forget-link">
+						<a href=https://auth.ultimatix.net/utxLogin/pages/ForgetSelectionInt.jsp tabindex="0">Forgot Username/Password?</a>
+					</div>
+					
+			</div>
+			<div id="ph_copyright">
+				<a data-toggle="modal" data-target="#termsofUseModalMobile">Terms and Conditions</a><br> Copyright &copy; 2019 Tata Consultancy Services
+			</div>
+										<!-- Modal -->
+										<div class="modal fade" id="termsofUseModalMobile" tabindex="-1" role="dialog" aria-labelledby="termsofUseModalTitle" aria-describedby="termsModal" aria-modal="true">
+											<div class="modal-dialog modal-dialog-centered" role="document">
+												<div class="modal-content" id="terms-content">
+												<div class="modal-header">
+													<h5 class="modal-title" id="termsofUseModalLongTitleMobile">
+													</h5>
+						
+												</div>
+												<div class="modal-body" id="termsModalMobile">
+														
+												</div>
+												<div class="modal-ok-btn-container"><button type="button" class="btn btn-primary" data-dismiss="modal" id="modal-ok-btn">OK</button></div>
+												</div>
+											</div>
+											</div>
+		</div>
+	</div>
+	<script type="text/javascript" src="/login/js/Modified/onLoad.js"></script>
+	<script type="text/javascript" src="/login/js/Modified/mdb.min.js" defer></script>
+	<script type="text/javascript" src="/login/js/Modified/script1.js"></script>
+</body>
+<script type="text/javascript">
+function openTermsWindow(){
+
+	mywin = window.open('/utxLogin/pages/terms.jsp', "TermsWindow", 'toolbar=0, location=0, width=600,height=540,status=no, resizable=no, scrollbars=yes, top=70, left=90');
+	mywin.focus();
+
+}
+/* will open the Browser and Display Compatibilty pop-up*/
+function browserCompatibilityWindow(){
+
+	mywin = window.open('/utxLogin/pages/BrowserCompatibility.jsp', "CompatibilityWindow", 'toolbar=0, location=0, width=450,height=355,status=no, resizable=no, scrollbars=yes, top=70, left=90');
+	mywin.focus();
+
+}
+</script>
+
+</html>
